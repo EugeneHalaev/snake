@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Snake basic</title>
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+		}
+
+		body {
+			background: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		/*Рамка игрового поля*/
+		canvas {
+			border-style: solid;
+			border-width: thick;
+			border-color: black; 
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Игровое поле -->
+	<canvas width="400" height="400" id="game"></canvas>
+	
+	<!-- Скрипт с игрой -->
+	<script>
+		// Задаем все переменные
+		// Находим canvas в документе
+		let canvas = document.getElementById('game');
+
+		// Указываем каким образом рисуем в canvas
+		let context = canvas.getContext('2d');
+		
+		// Размер одной клетки - 16 пикселей
+		let grid = 16;
+
+		// Скорость змейки
+		let count = 0;
+		let speed = 10; // Для уменьшения скорости змейки нужно увеличить это значение
+
+		// Модель змейки
+		let snake = {
+			// старт змейки
+			x: getRandomInt() * grid,
+			y: getRandomInt() * grid,
+			// Со старта змейка двигается вниз
+			dx: 0,
+			dy: grid,
+			// хвост
+			cells: [],
+			// длинна змейки
+			maxCells: 2
+		};
+		
+
+		// кубик, который должна собирать змейка
+		let cube = {
+			// Начальные координаты кубика
+			x: getRandomInt() * grid,
+			y: getRandomInt() * grid
+		};
+
+		// Генератор случайных чисел, для того чтобы размещать кубики на поле случайным образом.
+		function getRandomInt() {
+			return Math.floor(Math.random() * 25);
+		}
+
+		// Игровой цикл, который работает бесконечно
+		function weblab() {
+			// делает игру в 15 кадров
+			requestAnimationFrame(weblab);
+			// код выполнится один раз для замедления кадров
+			if (++count < speed) {
+				return
+			}
+			// обнуляем скорость
+			count = 0;
+			// очищаем поле
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			// двигаем змейку
+			snake.x += snake.dx;
+			snake.y += snake.dy;
+			// край поля по горизонтали ---> продолжаем с противоположной стороны
+			if (snake.x < 0) {
+				snake.x = canvas.width - grid;
+			} else if (snake.x >= canvas.width) {
+				snake.x = 0;
+			}
+			// край поля по вертикали ---> продолжаем с противоположной стороны
+			if (snake.y < 0) {
+				snake.y = canvas.height - grid;
+			} else if (snake.y >= canvas.height) {
+				snake.y = 0;
+			}
+			
+			// добавляем координаты головы в начало массива
+			snake.cells.unshift({x: snake.x, y: snake.y});
+			// удаляем последний элемент из массива змейки, она и освобождает клетки после себя
+			if (snake.cells.length > snake.maxCells) {
+				snake.cells.pop();
+			}
+
+
+			// наш кубик
+			context.fillStyle = "red";
+			context.fillRect(cube.x, cube.y, grid - 1, grid - 1);
+			// одно движение змейки - один новый квадрат
+			context.fillStyle = "black";
+			// обрабатываем каждый элемент змейки
+			snake.cells.forEach(function (cell, index) {
+				// создаем эффект клеточек
+				context.fillRect(cell.x, cell.y, grid - 1, grid - 1);
+				// когда змейка съела кубик
+				if (cell.x === cube.x && cell.y === cube.y) {
+					// увеличиваем длинну змейки
+					snake.maxCells++;
+					// рисуем новый кубик
+					// игровое поле разбито на ячейки - 25 в каждую сторону
+					cube.x = getRandomInt() * grid;
+					cube.y = getRandomInt() * grid;
+				}
+				// проверка было столкновение или нет
+				// для этого перебираем весь массив и проверяем, есть ли в нем две клетки с одинаковыми координатами
+				for (let i = index + 1; i < snake.cells.length; i++) {
+					// Если есть - игра начинается заново
+					if (cell.x === snake.cells[i].x && cell.y === snake.cells[i].y) {
+						// Стартовые параметры основным переменным
+						snake.x = getRandomInt() * grid;
+						snake.y = getRandomInt() * grid;
+						snake.cells = [];
+						snake.maxCells = 2;
+						snake.dx = 0;
+						snake.dy = grid;
+						// ставим кубик в случайное место
+						cube.x = getRandomInt() * grid;
+						cube.y = getRandomInt() * grid;
+					}
+				}
+			});
+		}
+
+		// Какие нажимаются клавиши и реагируем на них
+		document.addEventListener('keydown', function(e) {
+			// проверка: если змейка движется вверх, то нажатие вниз или вверх ничего не поменяет - змейка вверх
+			// стелка влево, если нажата стрелка влево, и при этом змейка не движется по горизонтали
+			if (e.which === 37 && snake.dx === 0) {
+				// то придаем ей движение по горизонтали, влево, а вертикальное - останавливаем, тоже самое и для остальных кнопок
+				snake.dx = -grid;
+				snake.dy = 0;
+			}
+			// стелка вверх
+			else if (e.which === 38 && snake.dy === 0) {
+				snake.dy = -grid;
+				snake.dx = 0;
+			}
+			// стелка вправо
+			else if (e.which === 39 && snake.dx === 0) {
+				snake.dx = grid;
+				snake.dy = 0;
+			}
+			// стелка вниз
+			else if (e.which === 40 && snake.dy === 0) {
+				snake.dy = grid;
+				snake.dx = 0;
+			}
+		});
+
+		requestAnimationFrame(weblab);
+	</script>
+	
+</body>
+</html>
